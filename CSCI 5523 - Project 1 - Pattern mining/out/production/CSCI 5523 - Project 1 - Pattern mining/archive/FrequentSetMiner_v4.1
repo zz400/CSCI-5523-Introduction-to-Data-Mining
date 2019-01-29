@@ -1,0 +1,70 @@
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * 
+ */
+
+/**
+ * @author Zhengyang Zhao
+ * Oct 18, 2018
+ */
+
+public class FrequentSetMiner {
+	
+	static ArrayList<ArrayList<Integer>> frequentSets = new ArrayList<>();
+	static ArrayList<Integer> frequencies = new ArrayList<>();
+	static int frequentSetsNum = 0;
+	static int longestSetLength = 0;
+	
+	static void getFrequentSets(List<List<Integer>> db, int minSup) {
+		SparseList originList = new SparseList(db);
+		originList.doProjection(0, minSup);
+		ArrayList<Integer> freqSet = new ArrayList<>();
+		doDFS(originList, minSup, freqSet);
+	}
+	
+	static void doDFS(SparseList fatherList, int minSup, ArrayList<Integer> freqSetFather) {
+		if (fatherList.nonZeroCols.size() == 0) {
+			return;
+		}
+
+		for (int colIndex : fatherList.nonZeroCols) {
+			ArrayList<Integer> freqSetSon = new ArrayList<>();
+			for (int i = 0; i < freqSetFather.size(); i++) {
+				freqSetSon.add(freqSetFather.get(i));
+			}
+			freqSetSon.add(colIndex);
+			int frequency = fatherList.colMap[colIndex + 1] - fatherList.colMap[colIndex];
+			frequentSets.add(freqSetSon);
+			frequencies.add(frequency);
+			frequentSetsNum++;
+			//longestSetLength = Math.max(longestSetLength, freqSetSon.size());
+			
+			SparseList sonList = new SparseList(fatherList);
+			sonList.doProjection(colIndex, minSup);
+			doDFS(sonList, minSup, freqSetSon);
+		}
+	}
+	
+	public static void main(String[] args) {
+		int option = 2;
+		int minSup = 300;
+		int[] minSupList = {20};
+		String filename = "src/large";
+
+		for (int i = 0; i < minSupList.length; i++) {
+			FileLoader.runBatch(filename, option);
+			long t0 = System.currentTimeMillis(); 
+			frequentSetsNum = 0;
+			getFrequentSets(FileLoader.dbReordered, minSupList[i]);
+			long t1 = System.currentTimeMillis(); 
+			System.out.println("minSup = " + minSupList[i] + ": " + (t1 - t0)  + " ms; " + frequentSetsNum  + " frequentSetsNum");
+			//System.out.println("frequentSets: " + frequentSets);
+			//System.out.println("frequencies: " + frequencies);
+			//System.out.println("longestSetLength: " + longestSetLength);
+		
+		}
+	}
+
+}

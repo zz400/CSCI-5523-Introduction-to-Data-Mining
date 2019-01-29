@@ -1,0 +1,94 @@
+v1 - small：
+minSup = 20: 12833 ms; 50763 SparseList
+minSup = 30: 4835 ms; 58235 SparseList
+minSup = 500: 32 ms; 58243 SparseList
+
+v2 - small:
+option = 1
+minSup = 20: 7594 ms; 50763 SparseList
+minSup = 30: 1627 ms; 7472 SparseList
+minSup = 500: 45 ms; 8 SparseList
+option = 2
+minSup = 20: 6845 ms; 50763 SparseList
+minSup = 30: 1434 ms; 7472 SparseList
+minSup = 500: 53 ms; 8 SparseList
+option = 3
+minSup = 20: 7517 ms; 50763 SparseList
+minSup = 30: 1578 ms; 7472 SparseList
+minSup = 500: 52 ms; 8 SparseList
+
+
+v2 - large:
+option = 1
+minSup = 50: 355880 ms; 166566 SparseList
+minSup = 100: 92469 ms; 39980 SparseList
+minSup = 500: 4651 ms; 2312 SparseList
+option = 2
+minSup = 500: 5359 ms; 2312 SparseList
+option = 3
+minSup = 500: 5421 ms; 2312 SparseList
+
+
+v3.1 - small:
+option = 1
+minSup = 20: 4688 ms; 50763 SparseList
+minSup = 30: 1104 ms; 58235 SparseList
+minSup = 500: 10 ms; 58243 SparseList
+option = 2
+minSup = 20: 4173 ms; 50763 SparseList
+minSup = 30: 1127 ms; 58235 SparseList
+minSup = 500: 29 ms; 58243 SparseList
+option = 3
+minSup = 20: 5052 ms; 50763 SparseList
+minSup = 30: 1015 ms; 58235 SparseList
+minSup = 500: 36 ms; 58243 SparseList
+
+v3.1 - large:
+option = 1
+minSup = 50: 374060 ms; 166566 SparseList
+minSup = 100: 122667 ms; 39980 SparseList
+minSup = 500: 8066 ms; 2312 SparseList
+
+option = 2
+minSup = 20: 668763 ms; 17565169 SparseList
+minSup = 30: 403133 ms; 1433745 SparseList
+minSup = 50: 252259 ms; 166566 SparseList
+minSup = 100: 114148 ms; 39980 SparseList
+minSup = 500: 11320 ms; 2312 SparseList
+
+option = 3
+minSup = 50: 340124 ms; 166566 SparseList
+minSup = 100: 106290 ms; 39980 SparseList
+minSup = 500: 6774 ms; 2312 SparseList
+
+
+v3.2 - large:
+option = 2
+minSup = 20: 509414 ms; 17565168 frequentSetsNum
+
+v4.1 - large:
+option = 2
+minSup = 20: 612012 ms; 17565168 frequentSetsNum  3.3G
+minSup = 30: 336165 ms; 1433744 frequentSetsNum
+minSup = 50: 213097 ms; 166565 frequentSetsNum
+minSup = 100: 97046 ms; 39979 frequentSetsNum
+
+
+v4.2 - small:
+option = 1
+minSup = 20: 668 ms; 50762 frequentSetsNum
+minSup = 30: 295 ms; 7471 frequentSetsNum
+minSup = 500: 17 ms; 7 frequentSetsNum
+
+v4.2 - large:
+option = 2
+minSup = 20: 206927 ms; 17565168 frequentSetsNum
+minSup = 30: 200633 ms; 1433744 frequentSetsNum
+minSup = 100: 104896 ms; 39979 frequentSetsNum
+minSup = 500: 11465 ms; 2311 frequentSetsNum
+
+
+
+		20			30			500
+small	50762		7471		7
+large	17565168	1433744		2311

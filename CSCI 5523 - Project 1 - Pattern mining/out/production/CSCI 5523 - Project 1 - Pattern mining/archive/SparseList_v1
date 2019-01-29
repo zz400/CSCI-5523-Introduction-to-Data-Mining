@@ -1,0 +1,266 @@
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+
+
+/**
+ * Use List of List to store binary sparse matrix
+ */
+
+/**
+ * @author Zhengyang Zhao
+ * Oct 18, 2018
+ */
+
+public class SparseList {
+
+	int nnz;  // number of non-zero entries in the matrix
+	int rowNum; 
+	int colNum;  
+	ArrayList<Integer> colFreq;  // length = colNum
+	
+	LinkedList<Integer> nonZeroRows;
+	ArrayList<ArrayList<Integer>> listOfRows;
+	LinkedList<Integer> nonZeroCols;
+	ArrayList<ArrayList<Integer>> listOfCols;  
+	
+	SparseList(List<List<Integer>> dbOrigin) {
+		// dbOrigin: two-column arrayList listing the cells with value "1".
+		// 		col0 lists row indexes of non-zero entries; 
+		// 		col1 lists column indexes of non-zero entries.
+		
+		nnz = FileLoader.numRec;
+		rowNum = FileLoader.maxTransID + 1;
+		colNum = FileLoader.maxItemID + 1;
+		
+		colFreq =  new ArrayList<>();
+		nonZeroRows = new LinkedList<>();
+		nonZeroCols = new LinkedList<>();
+		listOfRows = new ArrayList<>();
+		listOfCols = new ArrayList<>();
+		
+		for (int i = 0; i < colNum; i++) {
+			colFreq.add(0);
+			nonZeroCols.add(i);
+			listOfCols.add(null);
+		}
+		for (int i = 0; i < rowNum; i++) {
+			nonZeroRows.add(i);
+		}
+
+		ArrayList<Integer> row = new ArrayList<>();
+		row.add(dbOrigin.get(1).get(0));
+		
+		for (int i = 1; i < dbOrigin.get(0).size(); i++) {
+			if (!dbOrigin.get(0).get(i).equals( dbOrigin.get(0).get(i - 1) )) {
+				listOfRows.add(row);
+				row = new ArrayList<>();
+			}
+			row.add(dbOrigin.get(1).get(i));
+		}
+		listOfRows.add(row);
+		
+		updateColList();
+	}
+	
+	
+	SparseList(SparseList another) {
+		nnz = FileLoader.numRec;
+		rowNum = FileLoader.maxTransID + 1;
+		colNum = FileLoader.maxItemID + 1;
+		
+		colFreq =  new ArrayList<>();
+		nonZeroRows = new LinkedList<>();
+		nonZeroCols = new LinkedList<>();
+		listOfRows = new ArrayList<>();
+		listOfCols = new ArrayList<>();
+		for (int i = 0; i < another.colFreq.size(); i++) {
+			colFreq.add(another.colFreq.get(i));
+		}
+		for (int i = 0; i < another.nonZeroRows.size(); i++) {
+			nonZeroRows.add(another.nonZeroRows.get(i));
+		}
+		for (int i = 0; i < another.nonZeroCols.size(); i++) {
+			nonZeroCols.add(another.nonZeroCols.get(i));
+		}
+		for (int i = 0; i < another.listOfRows.size(); i++) {
+			listOfRows.add(another.listOfRows.get(i));
+		}
+		for (int i = 0; i < another.listOfCols.size(); i++) {
+			listOfCols.add(another.listOfCols.get(i));
+		}
+	}
+	
+	
+	
+	
+	
+	public void updateColList() {
+		// Task: From listOfRows to get listOfCols, as well as nonZeroCols, colFreq.
+		// Before run, listOfRows, nonZeroRows are updated
+		// When done, listOfRows, listOfCols, nonZeroRows, nonZeroCols, colFreq are all updated.
+		
+		// Before running, listOfCols could be:
+		// 		a. all Null (Construct stage), and nonZeroCols = all Cols, colFreq = all 0's.
+		// 		b. some Cols are Null, and nonZeroCols lists non-Null Cols, colFreq(Null-Cols) = 0.
+		// So, before updating listOfCols, we need to set all non-Null Cols to Null.
+		
+		Iterator<Integer> iter = nonZeroCols.iterator();
+		while (iter.hasNext()) {
+			int colIndex = iter.next();
+			listOfCols.set(colIndex, null);
+		}
+		
+		for (int i : nonZeroRows) {
+			ArrayList<Integer> row = listOfRows.get(i);
+			for (int j : row) { 
+				if (listOfCols.get(j) == null) {
+					listOfCols.set(j, new ArrayList<Integer>());
+				}
+				listOfCols.get(j).add(i);
+			}
+		}
+		
+		// After updating listOfCols, Cols that don't contain non-zero entries are pointing to Null.
+		// Then update nonZeroCols and colFreq. The new nonZeroCols will be a subset of the old nonZeroCols.
+		
+		iter = nonZeroCols.iterator();
+		while (iter.hasNext()) {
+			int colIndex = iter.next();
+			if (listOfCols.get(colIndex) == null) {
+				colFreq.set(colIndex, 0);
+				iter.remove();
+			} else {
+				colFreq.set(colIndex, listOfCols.get(colIndex).size());
+			}
+		}
+		
+		// System.out.println("nonZeroCols updated: " + nonZeroCols);
+	}
+		
+	
+	public void updateRowList() {
+		// Task: From listOfCols to get listOfRows, as well as to update nonZeroRows.
+		// Before run, listOfCols, nonZeroCols and colFreq are updated.
+		// When done, listOfRows, listOfCols, nonZeroRows, nonZeroCols, colFreq are all updated.
+		
+		// Before updating listOfRows, we need to set all non-Null Rows to Null.
+		
+		Iterator<Integer> iter = nonZeroRows.iterator();
+		while (iter.hasNext()) {
+			int rowIndex = iter.next();
+			listOfRows.set(rowIndex, null);
+		}
+		
+		for (int i : nonZeroCols) {
+			ArrayList<Integer> col = listOfCols.get(i);
+			for (int j : col) { 
+				if (listOfRows.get(j) == null) {
+					listOfRows.set(j, new ArrayList<Integer>());
+				}
+				listOfRows.get(j).add(i);
+			}
+		}
+		
+		// After updating listOfRows, Rows that don't contain non-zero entries are pointing to Null.
+		// Then update nonZeroRows. The new nonZeroRows will be a subset of the old nonZeroRows.
+		
+		iter = nonZeroRows.iterator();
+		while (iter.hasNext()) {
+			int rowIndex = iter.next();
+			if (listOfRows.get(rowIndex) == null) {
+				iter.remove();
+			}
+		}
+		
+		// System.out.println("nonZeroRows updated: " + nonZeroRows);
+	}
+	
+	
+	public void doProjection(int column, int minSup) {
+		// Task: get the projected-db of 'column'. And remove all the columns whose non-zero entries < minSup.
+		// Before run, listOfRows, listOfCols, nonZeroRows, nonZeroCols, and colFreq are all updated
+		// 1. From listOfCols (old), get all the rows that should be kept.
+		// 2. From listOfRows (old), set all the other rows to Null.
+		// 3. From nonZeroRows, remove the rows that won't be kept. 
+		// 4. Update listOfCols (new), nonZeroCols, colFreq.
+		// 5. From listOfCols (new), set all the columns <= 'column' to Null, set all the columns with non-zero entries < minSup to Null.
+		// 6. From nonZeroCols, remove the those columns indexes. 
+		// 7. Update listOfRows and nonZeroRows.
+		// When done, listOfRows, listOfCols, nonZeroRows, nonZeroCols, colFreq are updated.
+		
+		
+		// Select rows:
+		ArrayList<Integer> keepRows = listOfCols.get(column);
+		// System.out.println("keepRows:" + keepRows);
+		if (keepRows != null) {
+			
+			while (nonZeroRows.getLast() > keepRows.get(keepRows.size() - 1)) {
+				nonZeroRows.removeLast();
+			}
+			while (nonZeroRows.getFirst() < keepRows.get(0)) {
+				nonZeroRows.removeFirst();
+			}
+			
+			Iterator<Integer> iter = nonZeroRows.iterator();
+			int i = 0;
+			while (iter.hasNext()) {
+				int rowIndex = iter.next();
+				int rowKeep = keepRows.get(i);
+				if (rowIndex == rowKeep) {
+					i++;
+					continue;
+				} else {
+					listOfRows.set(rowIndex, null);
+					iter.remove();
+				}
+			}
+		}
+		
+		// System.out.println("After row selection:");
+		// System.out.println("nonZeroRows: " + nonZeroRows);
+		
+		updateColList();
+		
+		// Prune columns:
+		Iterator<Integer> iter = nonZeroCols.iterator();
+		while (iter.hasNext()) {
+			int colIndex = iter.next();
+			if (colIndex <= column || colFreq.get(colIndex) < minSup) {
+				listOfCols.set(colIndex, null);
+				colFreq.set(colIndex, 0);
+				iter.remove();
+			}
+		}
+		
+		updateRowList();
+	}
+	
+	
+	public static void main(String[] args) {
+		String filename = "src/toy";
+		List<List<Integer>> dbOrigin = FileLoader.getDBOrigin(filename);
+		
+		SparseList sList = new SparseList(dbOrigin);
+		sList.doProjection(9, 5);
+		System.out.println(sList.rowNum);
+		System.out.println("nonZeroRows: " + sList.nonZeroRows);
+		System.out.println("nonZeroCols: " + sList.nonZeroCols);
+		
+		System.out.println(sList.colFreq.get(0));
+		System.out.println(sList.colFreq.get(1));
+		System.out.println(sList.colFreq.get(2));
+		System.out.println(sList.colFreq.get(3));
+		System.out.println(sList.colFreq.get(4));
+		
+		System.out.println("\n");
+		System.out.println(sList.rowNum);
+		System.out.println(sList.nonZeroRows.size());
+		System.out.println(sList.colNum);
+		System.out.println(sList.nonZeroCols.size());
+		
+	}
+
+}
+	

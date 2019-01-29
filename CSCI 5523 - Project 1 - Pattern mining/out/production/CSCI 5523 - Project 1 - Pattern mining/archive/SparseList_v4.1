@@ -1,0 +1,172 @@
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+
+/**
+ * Use List of List to store binary sparse matrix
+ */
+
+/**
+ * @author Zhengyang Zhao
+ * Oct 18, 2018
+ */
+
+public class SparseList {
+	
+	static int countInstance = 0;
+	static int nnz = FileLoader.numRec;  // number of non-zero entries in the matrix
+	static int rowNum = FileLoader.maxTransID + 1;
+	static int colNum = FileLoader.maxItemID + 1;
+	
+	LinkedList<Integer> nonZeroCols = new LinkedList<>();
+	ArrayList<Integer> colList = new ArrayList<>();  // Store the non-zero entries' rowIndexes using CSC 
+	int[] colMap = new int[colNum + 1];  
+	// from colList[colMap[i]] to colList[ colMap[i+1] - 1] are the rowIndexes of entries in Column i.
+	
+	SparseList(List<List<Integer>> db) {
+		// db: two-column arrayList listing the cells with value "1".
+		// 		col0 lists row indexes of non-zero entries; 
+		// 		col1 lists column indexes of non-zero entries.
+		
+		countInstance++;
+		nnz = FileLoader.numRec;  // number of non-zero entries in the matrix
+		rowNum = FileLoader.maxTransID + 1;
+		colNum = FileLoader.maxItemID + 1;
+		
+		// Initialize nonZeroCols and colMap:
+		colMap[0] = 0; 
+		for (int i = 0; i < colNum; i++) {
+			nonZeroCols.add(i);
+			colMap[i + 1] = colMap[i] + FileLoader.frequenciesReordered[i];
+		}
+		
+		// Filling colList:
+		int[] fillingCount = new int[colNum];
+		for (int i = 0; i < db.get(0).size(); i++) {
+			colList.add(null);
+		}
+		for (int i = 0; i < db.get(0).size(); i++) {
+			int rowIndex = db.get(0).get(i);
+			int colIndex = db.get(1).get(i);
+			int fillingIndex = colMap[colIndex] + fillingCount[colIndex];
+			colList.set(fillingIndex, rowIndex);
+			fillingCount[colIndex]++;
+		}
+	}
+	
+	SparseList(SparseList another) {
+		countInstance++;
+		for (int i = 0; i < another.nonZeroCols.size(); i++) {
+			nonZeroCols.add(another.nonZeroCols.get(i));
+		}
+		colList = another.colList;
+		colMap = another.colMap;
+	}
+	
+	public void updateColList(int refCol, int minSup) {
+		ArrayList<Integer> colListFather = colList;
+		int[] colMapFather = colMap;
+		colList = new ArrayList<Integer>();
+		colMap = new int[colNum + 1];
+		
+		int writeTo = 0;
+		Iterator<Integer> iter = nonZeroCols.iterator();
+		while (iter.hasNext()) {
+			int colIndex = iter.next();
+			int refStart = colMapFather[refCol];
+			int refTo = colMapFather[refCol + 1];
+			int colStart = colMapFather[colIndex];
+			int colTo = colMapFather[colIndex + 1];
+			
+			int count = pruneList(colListFather, refStart, refTo, colStart, colTo, writeTo);
+			if (count < minSup) {
+				iter.remove();
+			} else {
+				colMap[colIndex] = writeTo;
+				writeTo += count;
+				colMap[colIndex + 1] = writeTo;
+			}
+		}
+	}
+	
+	public void doProjection(int column, int minSup) {
+
+		if (column == 0) {
+			Iterator<Integer> iter = nonZeroCols.iterator();
+			while (iter.hasNext()) {
+				int colIndex = iter.next();
+				if (colMap[colIndex] == colMap[colIndex + 1]) {
+					iter.remove();
+				} else if (colMap[colIndex + 1] - colMap[colIndex] < minSup) {
+					iter.remove();
+				} 
+			}
+			
+		} else {
+			while (nonZeroCols.size() != 0 && nonZeroCols.get(0) <= column) {
+				nonZeroCols.removeFirst();
+			}
+			
+			if (nonZeroCols.size() != 0) {
+				// Select rows and Update listOfCols (pruning is envolved):
+				updateColList(column, minSup);
+			}
+		}
+	}
+	
+	public int pruneList(ArrayList<Integer> colListFather, int refStart, int refTo, 
+			int colStart, int colTo, int writeTo ) {
+		// Extract common elements of originList and refList. Add them into colList.
+		// refList: subList of colListFather, from refStart (inclusive) to refTo (exclusive);
+		// originList: subList of colListFather, from colStart (inclusive) to colTo (exclusive);
+		// Add the common elements to colList, the first element be added at index writeTo.
+		// Return the number of common elements.
+		
+		int i = colStart, j = refStart;
+		int count = 0;
+		while (i < colTo && j < refTo) {
+			if (colListFather.get(i).equals(colListFather.get(j))) {
+				colList.add(writeTo, colListFather.get(i));
+				i++;
+				j++;
+				writeTo++;
+				count++;
+			} else if (colListFather.get(i) < colListFather.get(j)) {
+				int increment = 1;
+				while (i < colTo && colListFather.get(i) < colListFather.get(j)) {
+					i += increment;
+					increment = increment * 2;
+				}
+				i -= increment / 2;
+				i++;
+			} else {
+				int increment = 1;
+				while (j < refTo && colListFather.get(j) < colListFather.get(i)) {
+					j += increment;
+					increment = increment * 2;
+				}
+				j -= increment / 2;
+				j++;
+			}
+		}
+		return count;
+	}
+	
+	public static void main(String[] args) {
+		int option = 1;
+		int minSup = 1;
+		String filename = "src/small";
+		FileLoader.runBatch(filename, option);
+		
+		SparseList sList = new SparseList(FileLoader.dbReordered);
+		sList.doProjection(4, minSup);
+		System.out.println("nonZeroCols: " + sList.nonZeroCols);
+//		for (int i = 0; i < sList.nonZeroCols.size(); i++) {
+//			int col = sList.nonZeroCols.get(i);
+//		}
+	}
+
+}
+	

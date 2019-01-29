@@ -1,0 +1,147 @@
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+
+/**
+ * Use List of List to store binary sparse matrix
+ */
+
+/**
+ * @author Zhengyang Zhao
+ * Oct 18, 2018
+ */
+
+public class SparseList {
+	
+	static int countInstance = 0;
+	static int nnz = FileLoader.numRec;  // number of non-zero entries in the matrix
+	static int rowNum = FileLoader.maxTransID + 1;
+	static int colNum = FileLoader.maxItemID + 1;
+	LinkedList<Integer> nonZeroCols = new LinkedList<>();
+	HashMap<Integer, ArrayList<Integer>> colMap = new HashMap<>();
+	
+	SparseList(List<List<Integer>> db) {
+		// db: two-column arrayList listing the cells with value "1".
+		// 		col0 lists row indexes of non-zero entries; 
+		// 		col1 lists column indexes of non-zero entries.
+		
+		countInstance++;
+		nnz = FileLoader.numRec;  // number of non-zero entries in the matrix
+		rowNum = FileLoader.maxTransID + 1;
+		colNum = FileLoader.maxItemID + 1;
+		
+		for (int i = 0; i < colNum; i++) {
+			nonZeroCols.add(i);
+		}
+		
+		for (int i = 0; i < db.get(0).size(); i++) {
+			int rowIndex = db.get(0).get(i);
+			int colIndex = db.get(1).get(i);
+			if (colMap.get(colIndex) == null) {
+				colMap.put(colIndex, new ArrayList<Integer>());
+			}
+			colMap.get(colIndex).add(rowIndex);
+		}
+	}
+	
+	SparseList(SparseList another) {
+		countInstance++;
+		for (int i = 0; i < another.nonZeroCols.size(); i++) {
+			nonZeroCols.add(another.nonZeroCols.get(i));
+		}
+		colMap = another.colMap;
+	}
+	
+	public void updateColList(ArrayList<Integer> fromRows, int minSup) {
+		
+		HashMap<Integer, ArrayList<Integer>> colMapOfFather = colMap;
+		colMap = new HashMap<>();
+		
+		Iterator<Integer> iter = nonZeroCols.iterator();
+		while (iter.hasNext()) {
+			int colIndex = iter.next();
+			ArrayList<Integer> colOfFather = colMapOfFather.get(colIndex);
+			ArrayList<Integer> col = getSubList(colOfFather, fromRows);
+			if (col.size() < minSup) {
+				iter.remove();
+			} else {
+				colMap.put(colIndex, col);
+			}
+		}
+	}
+	
+	public void doProjection(int column, int minSup) {
+
+		if (column == 0) {
+			Iterator<Integer> iter = nonZeroCols.iterator();
+			while (iter.hasNext()) {
+				int colIndex = iter.next();
+				if (!colMap.containsKey(colIndex)) {
+					iter.remove();
+				} else if (colMap.get(colIndex).size() < minSup) {
+					colMap.remove(colIndex);
+					iter.remove();
+				} 
+			}
+			
+		} else {
+			while (nonZeroCols.size() != 0 && nonZeroCols.get(0) <= column) {
+				nonZeroCols.removeFirst();
+			}
+			
+			if (nonZeroCols.size() != 0) {
+				// Select rows and Update listOfCols (pruning is envolved):
+				ArrayList<Integer> keepRows = colMap.get(column);
+				updateColList(keepRows, minSup);
+			}
+		}
+	}
+	
+	public ArrayList<Integer> getSubList(ArrayList<Integer> originList, ArrayList<Integer> refList) {
+		ArrayList<Integer> subList = new ArrayList<>();
+		int i = 0, j = 0;
+		while (i < originList.size() && j < refList.size()) {
+			if (originList.get(i).equals(refList.get(j))) {
+				subList.add(originList.get(i));
+				i++;
+				j++;
+			} else if (originList.get(i) < refList.get(j)) {
+				int increment = 1;
+				while (i < originList.size() && originList.get(i) < refList.get(j)) {
+					i += increment;
+					increment = increment * 2;
+				}
+				i -= increment / 2;
+				i++;
+			} else {
+				int increment = 1;
+				while (j < refList.size() && originList.get(i) > refList.get(j)) {
+					j += increment;
+					increment = increment * 2;
+				}
+				j -= increment / 2;
+				j++;
+			}
+		}
+		return subList;
+	}
+	
+	public static void main(String[] args) {
+		int option = 1;
+		int minSup = 1;
+		String filename = "src/small";
+		FileLoader.runBatch(filename, option);
+		
+		SparseList sList = new SparseList(FileLoader.dbReordered);
+		sList.doProjection(4, minSup);
+		System.out.println("nonZeroCols: " + sList.nonZeroCols);
+		for (int i = 0; i < sList.nonZeroCols.size(); i++) {
+			int col = sList.nonZeroCols.get(i);
+			System.out.println(col + ": " + sList.colMap.get(col));
+		}
+	}
+
+}
+	
